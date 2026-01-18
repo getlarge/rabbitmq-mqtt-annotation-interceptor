@@ -26,13 +26,15 @@ $(MONOREPO):
 	@git clone -q --depth 1 --branch $(RABBITMQ_VERSION) \
 		https://github.com/rabbitmq/rabbitmq-server.git $(MONOREPO)
 
-# Link our plugin into the monorepo's deps
+# Copy our plugin files into the monorepo's deps
+# We use cp instead of symlinks because relative symlinks are fragile
+# and absolute symlinks don't work in CI (different paths)
 $(PLUGIN_DIR): $(MONOREPO)
-	@echo "Linking plugin into monorepo..."
+	@echo "Copying plugin into monorepo..."
 	@rm -rf $(PLUGIN_DIR)
 	@mkdir -p $(PLUGIN_DIR)
-	@ln -sf $(CURDIR)/src $(PLUGIN_DIR)/src
-	@ln -sf $(CURDIR)/test $(PLUGIN_DIR)/test
+	@cp -r src $(PLUGIN_DIR)/src
+	@cp -r test $(PLUGIN_DIR)/test
 	@cp Makefile.plugin $(PLUGIN_DIR)/Makefile
 
 deps: $(PLUGIN_DIR)
@@ -43,7 +45,7 @@ compile: deps
 
 test ct: deps
 	@echo "Running tests..."
-	cd $(MONOREPO) && $(MAKE) -C deps/$(PROJECT) ct
+	cd $(PLUGIN_DIR) && MAKELEVEL=0 $(MAKE) ct
 
 # Build distribution .ez file
 dist: compile
