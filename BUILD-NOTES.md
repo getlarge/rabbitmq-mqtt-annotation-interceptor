@@ -50,6 +50,13 @@ make distclean                 # Remove everything including monorepo clone
 make dist                      # Creates dist/rabbitmq_mqtt_username_interceptor-X.Y.Z.ez
 ```
 
+**Important**: The `dist` target runs `make dist` inside the monorepo plugin directory, which:
+1. Builds the plugin and all dependencies
+2. Creates `plugins/<name>-<version>/` with the proper directory structure (ebin/, etc.)
+3. Then zips that directory into the `.ez` archive
+
+Simply running `make compile` only creates `ebin/` with `.beam` files - it does NOT create the `plugins/` directory needed for distribution.
+
 ### Testing
 
 ```bash

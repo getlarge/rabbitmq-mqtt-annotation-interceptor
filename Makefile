@@ -48,14 +48,25 @@ test ct: deps
 	cd $(PLUGIN_DIR) && MAKELEVEL=0 $(MAKE) ct
 
 # Build distribution .ez file
-dist: compile
-	@echo "Creating distribution..."
+# Note: We run 'make dist' in the plugin dir (not just compile) because:
+# - 'make compile' only creates ebin/ with .beam files
+# - 'make dist' creates plugins/<name>-<version>/ directory structure
+# - We then zip that directory into the .ez archive
+dist: deps
+	@echo "Building plugin distribution..."
+	$(MAKE) -C $(PLUGIN_DIR) dist
+	@echo "Creating .ez archive..."
 	@mkdir -p dist
-	@VERSION=$$(ls $(PLUGIN_DIR)/plugins/ | grep $(PROJECT) | sed 's/$(PROJECT)-//'); \
+	@PLUGIN_DIST_DIR=$$(ls -d $(PLUGIN_DIR)/plugins/$(PROJECT)-* 2>/dev/null | head -1); \
+		if [ -z "$$PLUGIN_DIST_DIR" ]; then \
+			echo "Error: Plugin dist directory not found in $(PLUGIN_DIR)/plugins/"; \
+			exit 1; \
+		fi; \
+		VERSION=$$(basename "$$PLUGIN_DIST_DIR" | sed 's/$(PROJECT)-//'); \
 		cd $(PLUGIN_DIR)/plugins && \
 		zip -r $(CURDIR)/dist/$(PROJECT)-$$VERSION.ez $(PROJECT)-$$VERSION
-	@echo "Distribution created in dist/"
-	@ls -la dist/
+	@echo "Distribution created:"
+	@ls -la dist/$(PROJECT)-*.ez
 
 clean:
 	@if [ -d $(PLUGIN_DIR) ]; then $(MAKE) -C $(PLUGIN_DIR) clean; fi
